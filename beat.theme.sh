@@ -213,7 +213,7 @@ prompt_context() {
 
 prompt_schroot() {
   if [[ -n "$SCHROOT_CHROOT_NAME" ]]; then
-    prompt_segment default red "($SCHROOT_CHROOT_NAME) "
+    prompt_segment default yellow "$SCHROOT_CHROOT_NAME "
   fi
 }
 
@@ -236,7 +236,7 @@ prompt_git() {
     else
       prompt_segment default green
     fi
-    PR="$PR${ref/refs\/heads\// }$dirty "
+    PR="$PR${ref/refs\/heads\//}$dirty "
   fi
 }
 
