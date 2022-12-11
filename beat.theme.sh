@@ -25,25 +25,9 @@
 DEBUG=0
 debug() {
   if [[ ${DEBUG} -ne 0 ]]; then
-    echo >&2 -e $*
+    echo >&2 -e "$@"
   fi
 }
-
-SCM_NONE_CHAR=''
-SCM_THEME_PROMPT_DIRTY=" ${_omb_prompt_brown}✗"
-SCM_THEME_PROMPT_CLEAN=""
-SCM_THEME_PROMPT_PREFIX="${_omb_prompt_green}| "
-SCM_THEME_PROMPT_SUFFIX="${_omb_prompt_green}|"
-SCM_GIT_SHOW_MINIMAL_INFO=true
-
-CLOCK_THEME_PROMPT_PREFIX=''
-CLOCK_THEME_PROMPT_SUFFIX=' '
-THEME_SHOW_CLOCK=${THEME_SHOW_CLOCK:-"true"}
-THEME_CLOCK_COLOR=${THEME_CLOCK_COLOR:-"$_omb_prompt_bold_navy"}
-THEME_CLOCK_FORMAT=${THEME_CLOCK_FORMAT:-"%I:%M:%S"}
-
-VIRTUALENV_THEME_PROMPT_PREFIX='('
-VIRTUALENV_THEME_PROMPT_SUFFIX=') '
 
 # SEGMENT_SEPARATOR=''
 SEGMENT_SEPARATOR=''
@@ -101,8 +85,8 @@ ansi() {
     fi
     seq="${seq}${mycodes[$i]}"
   done
-  debug "ansi debug:" '\\[\\033['${seq}'m\\]'
-  echo -ne '\[\033['${seq}'m\]'
+  debug "ansi debug:" '\\[\\033['"${seq}"'m\\]'
+  echo -ne '\[\033['"${seq}"'m\]'
   # PR="$PR\[\033[${seq}m\]"
 }
 
@@ -140,7 +124,7 @@ prompt_segment() {
     debug "post prompt " "$(ansi codes[@])"
     PR="$PR$(ansi codes[@])"
   else
-    debug "no current BG, codes is $codes[@]"
+    debug "no current BG, codes is ${codes[@]}"
     PR="$PR$(ansi codes[@])"
   fi
   CURRENT_BG=$1
@@ -162,13 +146,13 @@ prompt_right_segment() {
   codes=("${codes[@]}" $(text_effect reset))
   #    fi
   if [[ -n $1 ]]; then
-    bg=$(bg_color $1)
+    bg=$(bg_color "$1")
     codes=("${codes[@]}" $bg)
     debug "Added $bg as background to codes"
   fi
   if [[ -n $2 ]]; then
-    fg=$(fg_color $2)
-    codes=("${codes[@]}" $fg)
+    codes=("${codes[@]}" "$fg")
+    fg=$(fg_color "$2")
     debug "Added $fg as foreground to codes"
   fi
 
@@ -181,9 +165,9 @@ prompt_right_segment() {
   # fi
   declare -a intermediate2=($(fg_color $1) $(bg_color $CURRENT_RBG))
   # PRIGHT="$PRIGHT---"
-  debug "pre prompt " $(ansi intermediate2[@])
+  debug "pre prompt " "$(ansi intermediate2[@])"
   PRIGHT="$PRIGHT$(ansi intermediate2[@])$RIGHT_SEPARATOR"
-  debug "post prompt " $(ansi codes[@])
+  debug "post prompt " "$(ansi codes[@])"
   PRIGHT="$PRIGHT$(ansi codes[@])"
   # else
   #     debug "no current BG, codes is $codes[@]"
@@ -204,7 +188,8 @@ prompt_end() {
 }
 
 prompt_context() {
-  local user=$(whoami)
+  local user
+  user=$(whoami)
 
   if [[ "$user" != "$DEFAULT_USER" || -n "$SSH_CLIENT" ]]; then
     prompt_segment black default "${_omb_prompt_bold_gray}\u \h "
@@ -231,6 +216,13 @@ prompt_git() {
   if git rev-parse --is-inside-work-tree &>/dev/null; then
     dirty=$(git_status_dirty)
     ref=$(git symbolic-ref HEAD 2>/dev/null) || ref="➦ $(git show-ref --head -s --abbrev | head -n1 2>/dev/null)"
+    task=$(git rev-parse --abbrev-ref HEAD | cut -f 2 -d '/' | cut -f 1,2 -d '-')
+
+    # check if can abbreviate the ref
+    if [[ -n "$task" ]]; then
+      ref="$task"
+    fi
+
     if [[ -n $dirty ]]; then
       prompt_segment default yellow
     else
@@ -263,13 +255,12 @@ _omb_theme_PROMPT_COMMAND() {
 
   build_prompt
 
-  # attempt to work around the ansi colors
-  local save='\e[s'
-  local rest='\e[u'
-  PRIGHT_stripped=$(sed "s,\x1B\[[0-9;]*[a-zA-Z],,g" <<<"$PRIGHT")
-
   PS1="$PR"
 
+  # attempt to work around the ansi colors with right aligned
+  # local rest='\e[u'
+  # local save='\e[s'
+  # PRIGHT_stripped=$(sed "s,\x1B\[[0-9;]*[a-zA-Z],,g" <<<"$PRIGHT")
   # PS1="\[${save}\e[${COLUMNS:-$(tput cols)}C\e[${#PS1RHS_stripped}D${PRIGHT}${rest}\]${PR}"
   # PS1=$(printf "%*s\r%s\n\$ " "$(tput cols)" "$PRIGHT" "$PR")
 }
