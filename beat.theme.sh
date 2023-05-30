@@ -202,6 +202,28 @@ prompt_schroot() {
   fi
 }
 
+prompt_sim_host() {
+  if [[ -n "$HOSTCFG" ]]; then
+    if command -v xmlstarlet &> /dev/null; then
+      local host_type host_id
+      host_type=$(xmlstarlet sel -t -v "/config/hostType" "$HOSTCFG")
+      host_id=$(xmlstarlet sel -t -v "/config/hostId" "$HOSTCFG")
+
+     case "$host_type" in
+       "robot")
+         host_type="r"
+         ;;
+       "master")
+         host_type="m"
+         ;;
+     esac
+
+      prompt_segment default cyan "${host_type}-${host_id} "
+    fi
+  fi
+
+}
+
 prompt_dir() {
   prompt_segment default blue '\W '
 }
@@ -242,6 +264,7 @@ prompt_status() {
 
 build_prompt() {
   prompt_schroot
+  prompt_sim_host
   prompt_context
   prompt_dir
   prompt_git
